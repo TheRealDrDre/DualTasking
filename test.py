@@ -2,10 +2,12 @@
 
 import wx
 
-class DualTask():
+class DualTaskPanel(wx.Panel):
     """A Dual Task object"""
-    def __init__(self):
+    def __init__(self, parent, id):
+        super(DualTaskPanel, self).__init__(parent=parent, id=id)
         self.task_name = None
+        self.InitUI()
 
     @property
     def task_name(self):
@@ -15,16 +17,29 @@ class DualTask():
     def task_name(self, val):
         self._task_name = val
 
-class TypingTaskPanel(wx.Panel):
+    def InitUI(self):
+        """Does nothing, really"""
+        print("Test?")
+
+        
+class TypingTaskPanel(DualTaskPanel):
     
-    def _init__(self):
-        pass
+    def __init__(self, parent, id):
+        super(TypingTaskPanel, self).__init__(parent=parent, id=id)
 
 
-class SubtractionTaskPanel(wx.Panel):
-    def __init__(self):
-        pass
-    
+    def InitUI(self):
+        self.SetBackgroundColour("#FF5555")
+
+
+class SubtractionTaskPanel(DualTaskPanel):
+
+    def __init__(self, parent, id):
+        super(SubtractionTaskPanel, self).__init__(parent=parent, id=id)
+
+    def InitUI(self):
+        self.SetBackgroundColour("#5555FF")    
+
         
 class DualTaskFrame(wx.Frame):
     def __init__(self, parent, title):
@@ -38,12 +53,10 @@ class DualTaskFrame(wx.Frame):
         mainpanel = wx.Panel(self)
         mainbox = wx.BoxSizer(wx.HORIZONTAL)
         
-        typing = wx.Panel(mainpanel, -1)
-        typing.SetBackgroundColour("#ee1111")
+        typing = TypingTaskPanel(mainpanel, -1)
         mainbox.Add(typing, 1, wx.EXPAND | wx.ALL, 10)
         
-        subtraction = wx.Panel(mainpanel, -1)
-        subtraction.SetBackgroundColour("#11ee11")
+        subtraction = SubtractionTaskPanel(mainpanel, -1)
         mainbox.Add(subtraction, 1, wx.EXPAND | wx.ALL, 10)
 
         mainpanel.SetSizer(mainbox)
