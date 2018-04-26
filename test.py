@@ -1,6 +1,18 @@
 #!/usr/bin/env python
 
+## ---------------------------------------------------------------- ##
+## Goal is to keep all the code into a single file that can be run
+## as a script
+## 
+
 import wx
+import types
+
+EASY = 1001
+HARD = 1002
+
+CONDITIONS = {EASY : "easy", HARD : "hard",
+              "easy" : EASY, "hard" : HARD}
 
 class DualTaskPanel(wx.Panel):
     """A Dual Task object"""
@@ -9,6 +21,15 @@ class DualTaskPanel(wx.Panel):
         self.task_name = None
         self.InitUI()
 
+    @property
+    def condition(self):
+        return self._condition
+
+    @condition.setter
+    def condition(self, val):
+        if val == EASY or val == HARD:
+            self._condition = val
+        
     @property
     def task_name(self):
         return self._task_name
@@ -23,13 +44,62 @@ class DualTaskPanel(wx.Panel):
 
         
 class TypingTaskPanel(DualTaskPanel):
-    
-    def __init__(self, parent, id):
+    """A panel for the Typing Task"""
+    def __init__(self, parent, id, word = None, condition = EASY):
+        #self.index = 0
+        self.word = word
+        self.condition = condition
         super(TypingTaskPanel, self).__init__(parent=parent, id=id)
 
+            
+    @property
+    def index(self):
+        return self._index
 
+    @index.setter
+    def index(self, val):
+        if type(val) == int and self.word is not None:
+            self._index = val
+        else:
+            self._index = -1
+
+    @property
+    def word(self):
+        """Returns the internal string representation"""
+        return self._word
+
+    @word.setter
+    def word(self, val):
+        """Sets the word. Value needs to be a string or None"""
+        if type(val) == str:
+            self._word = val
+            self.index = 0
+        elif val == None:
+            self._word = ""
+            self.index = -1
+
+    def DisplayedWord(self):
+        if self.condition == EASY:
+            w = self.word
+            l = len(w)
+            i = self.index
+            if i >= l:
+                res = "#" * i + w[i:]
+            else:
+                res = "#" * l
+            return res
+    
+        
     def InitUI(self):
         self.SetBackgroundColour("#FF5555")
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(vbox)
+
+        text = wx.StaticText(self, -1, self.word)
+        entry = wx.TextCtrl(self, -1)
+        vbox.Add(text, wx.EXPAND|wx.ALL, 20)
+        vbox.Add(entry, wx.EXPAND|wx.ALL)
+
 
 
 class SubtractionTaskPanel(DualTaskPanel):
@@ -53,11 +123,11 @@ class DualTaskFrame(wx.Frame):
         mainpanel = wx.Panel(self)
         mainbox = wx.BoxSizer(wx.HORIZONTAL)
         
-        typing = TypingTaskPanel(mainpanel, -1)
-        mainbox.Add(typing, 1, wx.EXPAND | wx.ALL, 10)
+        typing = TypingTaskPanel(mainpanel, -1, word="Dolicocephalus")
+        mainbox.Add(typing, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
         
         subtraction = SubtractionTaskPanel(mainpanel, -1)
-        mainbox.Add(subtraction, 1, wx.EXPAND | wx.ALL, 10)
+        mainbox.Add(subtraction, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
 
         mainpanel.SetSizer(mainbox)
  
