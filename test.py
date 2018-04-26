@@ -15,6 +15,16 @@ HARD = 1002
 CONDITIONS = {EASY : "easy", HARD : "hard",
               "easy" : EASY, "hard" : HARD}
 
+class Logger():
+    """Logs responses onto a file"""
+    def __init__(self, filename):
+        if filename is not None:
+            self.log = open(filename, "w")
+        
+    def LogData(self, data):
+        pass
+    
+
 class DualTaskPanel(wx.Panel):
     """A Dual Task object"""
     def __init__(self, parent, id):
@@ -24,8 +34,13 @@ class DualTaskPanel(wx.Panel):
                                 wx.FONTSTYLE_NORMAL,
                                 wx.FONTWEIGHT_BOLD)
         self.InitUI()
+        self.logger = Logger(None)
 
 
+    def RegisterResponse(self, response):
+        """Registers a response"""
+        pass
+        
     @property
     def condition(self):
         return self._condition
