@@ -7,6 +7,7 @@
 
 import wx
 import types
+import string
 
 EASY = 1001
 HARD = 1002
@@ -19,7 +20,11 @@ class DualTaskPanel(wx.Panel):
     def __init__(self, parent, id):
         super(DualTaskPanel, self).__init__(parent=parent, id=id)
         self.task_name = None
+        self.monofont = wx.Font(16, wx.FONTFAMILY_TELETYPE,
+                                wx.FONTSTYLE_NORMAL,
+                                wx.FONTWEIGHT_BOLD)
         self.InitUI()
+
 
     @property
     def condition(self):
@@ -78,29 +83,37 @@ class TypingTaskPanel(DualTaskPanel):
             self._word = ""
             self.index = -1
 
-    def DisplayedWord(self):
-        if self.condition == EASY:
-            w = self.word
-            l = len(w)
-            i = self.index
-            if i >= l:
-                res = "#" * i + w[i:]
-            else:
-                res = "#" * l
-            return res
-    
         
     def InitUI(self):
         self.SetBackgroundColour("#FF5555")
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(vbox)
+        self.SetSizer(hbox)
 
         text = wx.StaticText(self, -1, self.word)
+        text.SetFont(self.monofont)
+        
         entry = wx.TextCtrl(self, -1)
-        vbox.Add(text, wx.EXPAND|wx.ALL, 20)
-        vbox.Add(entry, wx.EXPAND|wx.ALL)
+        entry.SetFont(self.monofont)
+        vbox.Add(text, wx.BOTTOM, 20)
+        vbox.Add(entry, wx.CENTRE, 20)
 
+        keyboard = wx.Panel(self, -1)
+        ksizer = wx.GridSizer(6, 5, 5, 5)
+        keyboard.SetSizer(ksizer)
+        
+        for letter in string.ascii_uppercase:
+            b = wx.Button(keyboard, -1, letter)
+            b.SetFont(self.monofont)
+            ksizer.Add(b, 20)
 
+        vbox.Add(keyboard, wx.TOP, 20)
+        hbox.Add(vbox)
+
+        self.Bind(wx.EVT_BUTTON,  self.OnButton)
+
+    def OnButton(self, event):
+        print(event.GetEventObject().GetLabel())
 
 class SubtractionTaskPanel(DualTaskPanel):
 
@@ -108,7 +121,32 @@ class SubtractionTaskPanel(DualTaskPanel):
         super(SubtractionTaskPanel, self).__init__(parent=parent, id=id)
 
     def InitUI(self):
-        self.SetBackgroundColour("#5555FF")    
+        self.SetBackgroundColour("#5555FF")
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(hbox)
+
+        text1 = wx.StaticText(self, -1, "1234567890")
+        text1.SetFont(self.monofont)
+        text2 = wx.StaticText(self, -1, "0123456789")
+        text2.SetFont(self.monofont)
+        entry = wx.TextCtrl(self, -1)
+        entry.SetFont(self.monofont)
+        vbox.Add(text1, wx.CENTRE, 20)
+        vbox.Add(text2, wx.CENTRE, 20)
+        vbox.Add(entry, wx.CENTRE)
+
+        keyboard = wx.Panel(self, -1)
+        ksizer = wx.GridSizer(2, 5, 5, 5)
+        keyboard.SetSizer(ksizer)
+        
+        for digit in string.digits:
+            b = wx.Button(keyboard, -1, digit)
+            b.SetFont(self.monofont)
+            ksizer.Add(b, 20)
+
+        vbox.Add(keyboard)
+        hbox.Add(vbox, wx.ALIGN_CENTRE)
 
         
 class DualTaskFrame(wx.Frame):
@@ -118,6 +156,9 @@ class DualTaskFrame(wx.Frame):
         self.Centre()
         self.Show()
 
+    def InitLetterButtons(self):
+        pass
+        
     def InitUI(self):
         "Does the layout"
         mainpanel = wx.Panel(self)
@@ -130,6 +171,7 @@ class DualTaskFrame(wx.Frame):
         mainbox.Add(subtraction, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
 
         mainpanel.SetSizer(mainbox)
+
  
         
 if __name__ == "__main__":
