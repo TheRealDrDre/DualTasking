@@ -218,22 +218,26 @@ class SubtractionTaskPanel(DualTaskPanel):
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         vbox = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(hbox)
+        
+        center = wx.Panel(self, -1)
+        cvbox = wx.BoxSizer(wx.VERTICAL)
+        center.SetSizer(cvbox)
 
         text1 = []   # Upper number
         text2 = []   # Lower number
         
         for j in range(self.size):
-            text1.append(wx.StaticText(self,
+            text1.append(wx.StaticText(center,
                                        -1,
                                        self.number1[j]))
 
         for j in range(self.size):
-            text2.append(wx.StaticText(self,
+            text2.append(wx.StaticText(center,
                                        -1,
                                        self.number2[j]))
 
-        text1.append(wx.StaticText(self, -1, "-"))
-        text2.append(wx.StaticText(self, -1, "="))
+        text1.append(wx.StaticText(center, -1, "-"))
+        text2.append(wx.StaticText(center, -1, "="))
             
         nsizer = wx.GridSizer(2, self.size + 1, 5, 5)
         allt = text1 + text2
@@ -242,15 +246,14 @@ class SubtractionTaskPanel(DualTaskPanel):
             t.SetFont(self.monofont)
             nsizer.Add(t, 5)
 
-        vbox.Add(nsizer)
+        cvbox.Add(nsizer)
         
-        entry = wx.TextCtrl(self, -1)
+        entry = wx.TextCtrl(center, -1)
         entry.SetFont(self.monofont)
-        entry.SetSize((50, 800))
         
-        vbox.Add(entry, wx.EXPAND | wx.LEFT | wx.RIGHT)
+        cvbox.Add(entry, proportion = 1, flag=wx.EXPAND)
 
-        keyboard = wx.Panel(self, -1)
+        keyboard = wx.Panel(center, -1)
         ksizer = wx.GridSizer(2, 5, 5, 5)
         keyboard.SetSizer(ksizer)
         
@@ -259,10 +262,17 @@ class SubtractionTaskPanel(DualTaskPanel):
             b.SetFont(self.monofont)
             ksizer.Add(b, 20)
 
-        vbox.Add(keyboard)
-        hbox.Add(vbox, wx.ALIGN_CENTRE)
+        cvbox.Add(keyboard)
 
-        # Save all the elements
+        vbox.Add((20, 20), wx.EXPAND)
+        vbox.Add(center)
+        vbox.Add((20, 20), wx.EXPAND)
+        
+        hbox.Add((20, 20), wx.EXPAND | wx.ALL)
+        hbox.Add(vbox)
+        hbox.Add((20, 20), wx.EXPAND | wx.ALL)
+        
+        # Save all the elements in internal fields
         self.entry = entry
         self.text1 = text1
         self.text2 = text2
