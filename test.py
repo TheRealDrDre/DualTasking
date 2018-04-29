@@ -136,16 +136,25 @@ class TypingTaskPanel(DualTaskPanel):
         """Does the layout of the panel."""
         self.SetBackgroundColour("#FF5555")
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        vbox = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(hbox)
+        
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        hbox.Add((20, 20), wx.EXPAND)
+        hbox.Add(vbox)
+        hbox.Add((20, 20), wx.EXPAND)
 
-        entry = wx.TextCtrl(self, -1)
+        
+        center = wx.Panel(self, -1)
+        cbox = wx.BoxSizer(wx.VERTICAL)
+        center.SetSizer(cbox)
+
+        entry = wx.TextCtrl(center, -1)
         entry.SetFont(self.monofont)
-        vbox.Add(entry, wx.CENTRE, 20)
+        cbox.Add(entry, proportion=1, flag=wx.EXPAND)
 
-        keyboard = wx.Panel(self, -1)
+        keyboard = wx.Panel(center, -1)
         keys = []
-        ksizer = wx.GridSizer(6, 5, 5, 5)
+        ksizer = wx.GridSizer(5, 6, 5, 5)
         keyboard.SetSizer(ksizer)
         
         for letter in string.ascii_uppercase:
@@ -154,9 +163,13 @@ class TypingTaskPanel(DualTaskPanel):
             ksizer.Add(b, 20)
             keys.append(b)
 
-        vbox.Add(keyboard, wx.TOP, 20)
-        hbox.Add(vbox)
+        cbox.Add(keyboard)
 
+
+        vbox.Add((20, 20), wx.EXPAND)
+        vbox.Add(center, wx.ALIGN_CENTRE)
+        vbox.Add((20, 20), wx.EXPAND)
+        
         # Save the internal components
         self.keys = keys
         self.entry = entry
@@ -184,6 +197,38 @@ class TypingTaskPanel(DualTaskPanel):
         letter = event.GetEventObject().GetLabel()
         self.index += 1
         self.SetUp()
+
+
+class PointPanel(DualTaskPanel):
+    def __init__(self, parent, id):
+        self.points = 200
+        self.pointthread = None
+        super(DualTaskPanel, self).__init__(parent = parent,
+                                            id = id)
+
+    @property
+    def points(self):
+        return self._points
+
+    @points.setter
+    def points(self, pnts):
+        self._points = pnts
+        self.Update()
+        
+    def InitUI(self):
+        hbox = wx.BoxSizer(wx.HORIZONTAL, border=20)
+        self.SetSizer(hbox)
+
+        vbox = wx.BoxSizer(wx.VERTICAL, border = 20)
+        hbox.Add((20, 20), wx.EXPAND)
+        hbox.Add(vbox)
+        hbox.Add((20, 20), wx.EXPAND)
+
+        text = wx.StaticText(self, -1, "Points:")
+        text.SetFont(self.monofont)
+        ptext = wx.StaticText(self, -1, "---")
+        ptext.SetFont(self.monofont)
+        
         
 class SubtractionTaskPanel(DualTaskPanel):
     def __init__(self, parent, id,
@@ -265,7 +310,9 @@ class SubtractionTaskPanel(DualTaskPanel):
         cvbox.Add(keyboard)
 
         vbox.Add((20, 20), wx.EXPAND)
-        vbox.Add(center)
+        #vbox.AddStretchSpacer(wx.EXPAND)
+        vbox.Add(center, wx.ALIGN_CENTER)
+        #vbox.AddStretchSpacer()
         vbox.Add((20, 20), wx.EXPAND)
         
         hbox.Add((20, 20), wx.EXPAND | wx.ALL)
@@ -301,6 +348,7 @@ class SubtractionTaskPanel(DualTaskPanel):
         
 class DualTaskFrame(wx.Frame):
     def __init__(self, parent, title):
+        """The main panel"""
         super(DualTaskFrame, self).__init__(parent, title=title, size=(800,400))
         self.InitUI()
         self.Centre()
@@ -315,10 +363,10 @@ class DualTaskFrame(wx.Frame):
         typing = TypingTaskPanel(mainpanel, -1,
                                  word = "Dolicocephalus",
                                  condition = EASY)
-        mainbox.Add(typing, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        mainbox.Add(typing, 1, wx.EXPAND | wx.LEFT, 10)
         
         subtraction = SubtractionTaskPanel(mainpanel, -1)
-        mainbox.Add(subtraction, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        mainbox.Add(subtraction, 1, wx.EXPAND | wx.RIGHT, 10)
 
         mainpanel.SetSizer(mainbox)
 
