@@ -9,6 +9,7 @@ import wx
 import types
 import string
 import time
+import yaml
 
 EASY = 1001
 HARD = 1002
@@ -51,11 +52,12 @@ class Logger():
             
 class ResponseEvent():
     """A Java-like event object that represents a subject's response"""
-    def __init__(self, source, response, time=time.time(), correct=None):
-        self.source = source
-        self.time = time
-        self.response = response
-        self.correct = None
+    def __init__(self, source, response, time=time.time(), correct=None, index=0):
+        self.source = source        # The UI panel that generated it
+        self.time = time            # The time at which it was generated
+        self.response = response    # The subject's response
+        self.correct = None         # What would have been the correct response
+        self.index = index          # The index of the response
 
         
 class DualTaskPanel(wx.Panel):
@@ -93,7 +95,7 @@ class DualTaskPanel(wx.Panel):
     def BroadcastResponse(self, response):
         """Registers a response"""
         for l in self.responseListeners:
-            l.RegisterResponse(response)
+            l.ProcessResponse(response)
         
     @property
     def condition(self):
@@ -114,7 +116,7 @@ class DualTaskPanel(wx.Panel):
 
     def InitUI(self):
         """Does nothing, really"""
-        print("Test?")
+        pass
 
     @property
     def index(self):
@@ -133,18 +135,53 @@ class DualTaskPanel(wx.Panel):
 
     def LogResponse(self, response):
         """Logs a response if the logger is enabled"""
-        time = time.time()
-        rt = time - self.onset 
+        tme = time.time()
+        rt = tme - self.onset 
         #diff = self.
         if self.logger is not None:
             data = [self.name,
                     CONDITIONS[self.condition],
                     response,
                     self.ResponseCorrect(response),
-                    time,
+                    tme,
                     rt]
             self.logger.log(data)
-            
+
+class PointPanel(DualTaskPanel):
+    def __init__(self, parent, id):
+        self.pointthread = None
+        super(PointPanel, self).__init__(parent = parent,
+                                            id = id)
+        self.points = 200
+
+    @property
+    def points(self):
+        return self._points
+
+    @points.setter
+    def points(self, pnts):
+        self._points = pnts
+        self.Update()
+        
+    def InitUI(self):
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(vbox)
+
+        vbox.Add((20, 20), wx.EXPAND | wx.ALL)
+        text = wx.StaticText(self, -1, "Points:")
+        text.SetFont(self.monofont)
+        vbox.Add(text)
+        points = wx.StaticText(self, -1, "---")
+        points.SetFont(self.monofont)
+        vbox.Add(points)
+
+        self.ptext = points
+
+    def SetUp(self):
+        self.ptext.SetLabel("%d" % self.points)
+
+        
 class TypingTaskPanel(DualTaskPanel):
     """A panel for the Typing Task"""
     def __init__(self, parent, id, word = None, condition = EASY):
@@ -179,6 +216,14 @@ class TypingTaskPanel(DualTaskPanel):
         else:
             res = "%s" % val
             self._word = res.upper()
+
+    @property
+    def correct_response(self):
+        """Returns the correct response for a subtraction task"""
+        if self.word is not None:
+            return self.word[self.index]
+        else:
+            return None
 
             
     def InitUI(self):
@@ -227,15 +272,13 @@ class TypingTaskPanel(DualTaskPanel):
 
     @DualTaskPanel.active.setter
     def active(self, status):
-        print("Active called for Typing: %s" % status)
         if self.entry is not None and self.keys is not None:
-            print("  Elements found")
             if status == True:
                 self.entry.Enable()
                 for k in self.keys:
                     k.Enable()
-                    self.Setup()
-                    self.onset = time.time()
+                self.SetUp()
+                self.onset = time.time()
             elif status == False:
                 self.entry.Disable()
                 self.entry.SetValue(EMPTY_STRING)
@@ -262,44 +305,17 @@ class TypingTaskPanel(DualTaskPanel):
 
     def OnButton(self, event):
         """Updates the panel after pressing one of the buttons"""
+        tme = time.time()
         letter = event.GetEventObject().GetLabel()
+        resp = ResponseEvent(self,
+                             response=letter,
+                             time=tme,
+                             correct = self.correct_response,
+                             index = self.index)
+        self.BroadcastResponse(resp)
         self.index += 1
-        self.SetUp()
 
 
-class PointPanel(DualTaskPanel):
-    def __init__(self, parent, id):
-        self.pointthread = None
-        super(PointPanel, self).__init__(parent = parent,
-                                            id = id)
-        self.points = 200
-
-    @property
-    def points(self):
-        return self._points
-
-    @points.setter
-    def points(self, pnts):
-        self._points = pnts
-        self.Update()
-        
-    def InitUI(self):
-
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(vbox)
-
-        vbox.Add((20, 20), wx.EXPAND | wx.ALL)
-        text = wx.StaticText(self, -1, "Points:")
-        text.SetFont(self.monofont)
-        vbox.Add(text)
-        points = wx.StaticText(self, -1, "---")
-        points.SetFont(self.monofont)
-        vbox.Add(points)
-
-        self.ptext = points
-
-    def Update(self):
-        self.ptext.SetLabel("%d" % self.points)
 
         
 class SubtractionTaskPanel(DualTaskPanel):
@@ -319,15 +335,32 @@ class SubtractionTaskPanel(DualTaskPanel):
         if type(status) == bool:
             self._active = status
             if self.text1 is not None and self.text2 is not None and self.entry is not None:
-                for t in self.text1:
-                    t.Disable()
-                for t in self.text2:
-                    t.Disable()
-                for k in self.keys:
-                    k.Disable()
-                self.entry.Disable()
-                self.entry.SetValue(EMPTY_STRING)
-        
+                if status == False:
+                    for t in self.text1:
+                        t.Disable()
+                        t.SetLabel(".")
+                    for t in self.text2:
+                        t.Disable()
+                        t.SetLabel(".")
+                    for k in self.keys:
+                        k.Disable()
+                        
+                    self.entry.Disable()
+                    self.entry.SetValue(EMPTY_STRING)
+
+                if status == True:          
+                    for d, t in zip(self.number1, self.text1[:-1]):
+                        t.Enable()
+                        t.SetLabel(d)
+                    for d, t in zip(self.number2, self.text2[:-1]):
+                        t.Enable()
+                        t.SetLabel(d)
+                    for k in self.keys:
+                        k.Enable()
+                        
+                    self.entry.Enable()
+                    self.SetUp()
+
     def SetNumbers(self, tpl):
         """Sets the internal numbers for subtraction"""
         self.number1 = tpl[0]
@@ -342,6 +375,13 @@ class SubtractionTaskPanel(DualTaskPanel):
         
         self.solution = "%.10d" % s
 
+    @property
+    def correct_response(self):
+        """Returns the correct response for a subtraction task"""
+        if self.solution is not None:
+            return self.solution[self.index]
+        else:
+            return None
         
     def InitUI(self):
         """Set up the panel UI"""
@@ -416,7 +456,6 @@ class SubtractionTaskPanel(DualTaskPanel):
         self.keys = keys
         
         self.Bind(wx.EVT_BUTTON,  self.OnButton)
-
     
 
     def SetUp(self):
@@ -432,11 +471,16 @@ class SubtractionTaskPanel(DualTaskPanel):
 
     def OnButton(self, event):
         """Updates the panel after pressing one of the buttons"""
+        tme = time.time()
         digit = event.GetEventObject().GetLabel()
+        resp = ResponseEvent(self,
+                             response=digit,
+                             time=tme,
+                             correct = self.correct_response,
+                             index = self.index)
+        self.BroadcastResponse(resp)
         self.index += 1
-        self.BroadcastResponse(digit)
-        self.SetUp()
-
+        
         
 class DualTaskFrame(wx.Frame):
     def __init__(self, parent, title):
@@ -464,7 +508,7 @@ class DualTaskFrame(wx.Frame):
         
         subtraction = SubtractionTaskPanel(mainpanel, -1)
         hbox.Add(subtraction, 1, wx.EXPAND | wx.RIGHT, 10)
-        subtraction.active = False
+        subtraction.active = True
         subtraction.AddResponseListener(self)
 
         #vbox.Add((20, 20), wx.EXPAND | wx.ALL)
@@ -477,8 +521,20 @@ class DualTaskFrame(wx.Frame):
         
         mainpanel.SetSizer(mainbox)
 
- 
-        
+        self.typing = typing
+        self.subtraction = subtraction
+        self.points = points
+
+
+    def ProcessResponse(self, event):
+        source = event.source
+        source.active = False
+        if source == self.typing:
+            self.subtraction.active = True
+        elif source == self.subtraction:
+            self.typing.active = True
+
+            
 if __name__ == "__main__":
     app = wx.App()
     e = DualTaskFrame(None, "Dual Task")
