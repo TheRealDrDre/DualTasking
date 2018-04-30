@@ -25,7 +25,7 @@ class Logger():
             self.log = open(pname, "w")
 
         self.stddata = []
-
+    
     @property
     def stddata(self):
         """Standard set of data to save for every row"""
@@ -38,15 +38,26 @@ class Logger():
             self._stddata = val
         else:
             self._stdata = [val]
-    
+            
     def LogData(self, data):
         """logs a standard row of data in file"""
         row = self.stddata + data 
-        for j in row[-1]:
-            self.log.write("%s\t" % j)
-        self.log.write("%s\n" % j)
-    
+        if self.log is not None:
+            for j in row[-1]:
+                self.log.write("%s\t" % j)
+            self.log.write("%s\n" % j)
+            self.log.flush()
 
+            
+class ResponseEvent():
+    """A Java-like event object that represents a subject's response"""
+    def __init__(self, source, response, time=time.time(), correct=None):
+        self.source = source
+        self.time = time
+        self.response = response
+        self.correct = None
+
+        
 class DualTaskPanel(wx.Panel):
     """A Dual Task object"""
     def __init__(self, parent, id, condition = EASY):
@@ -56,6 +67,7 @@ class DualTaskPanel(wx.Panel):
         self.logger = None
         self.onset = time.time()
         self.condition = condition
+        self.responseListeners = []
         self.monofont = wx.Font(16,
                                 wx.FONTFAMILY_TELETYPE,  # Monospace
                                 wx.FONTSTYLE_NORMAL,     # Not slanted
@@ -63,10 +75,25 @@ class DualTaskPanel(wx.Panel):
         self.InitUI()
         self.logger = Logger(None)
 
+    @property
+    def active(self):
+        return self._active
 
-    def RegisterResponse(self, response):
+
+    @active.setter
+    def active(self, status):
+       if status == True or status == False:
+           self._active = status
+        
+    def AddResponseListener(self, listener):
+        if not listener in self.responseListeners: 
+            self.responseListeners.append(listener)
+                
+
+    def BroadcastResponse(self, response):
         """Registers a response"""
-        pass
+        for l in self.responseListeners:
+            l.RegisterResponse(response)
         
     @property
     def condition(self):
@@ -124,6 +151,8 @@ class TypingTaskPanel(DualTaskPanel):
         #self.index = 0
         self.word = word
         self.condition = condition
+        self.entry = None
+        self.keys = None
         super(TypingTaskPanel, self).__init__(parent=parent, id=id)
         self.SetUp()
 
@@ -151,7 +180,7 @@ class TypingTaskPanel(DualTaskPanel):
             res = "%s" % val
             self._word = res.upper()
 
-        
+            
     def InitUI(self):
         """Does the layout of the panel."""
         self.SetBackgroundColour("#FF5555")
@@ -196,6 +225,25 @@ class TypingTaskPanel(DualTaskPanel):
         
         self.Bind(wx.EVT_BUTTON,  self.OnButton)
 
+    @DualTaskPanel.active.setter
+    def active(self, status):
+        print("Active called for Typing: %s" % status)
+        if self.entry is not None and self.keys is not None:
+            print("  Elements found")
+            if status == True:
+                self.entry.Enable()
+                for k in self.keys:
+                    k.Enable()
+                    self.Setup()
+                    self.onset = time.time()
+            elif status == False:
+                self.entry.Disable()
+                self.entry.SetValue(EMPTY_STRING)
+                for k in self.keys:
+                    k.Disable()
+        self._active = status
+
+        
     def SetUp(self):
         """Correctly sets up the panel according to the condition"""
         if self.index >= 0:
@@ -221,10 +269,10 @@ class TypingTaskPanel(DualTaskPanel):
 
 class PointPanel(DualTaskPanel):
     def __init__(self, parent, id):
-        self.points = 200
         self.pointthread = None
-        super(DualTaskPanel, self).__init__(parent = parent,
+        super(PointPanel, self).__init__(parent = parent,
                                             id = id)
+        self.points = 200
 
     @property
     def points(self):
@@ -236,19 +284,23 @@ class PointPanel(DualTaskPanel):
         self.Update()
         
     def InitUI(self):
-        hbox = wx.BoxSizer(wx.HORIZONTAL, border=20)
-        self.SetSizer(hbox)
 
-        vbox = wx.BoxSizer(wx.VERTICAL, border = 20)
-        hbox.Add((20, 20), wx.EXPAND)
-        hbox.Add(vbox)
-        hbox.Add((20, 20), wx.EXPAND)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(vbox)
 
+        vbox.Add((20, 20), wx.EXPAND | wx.ALL)
         text = wx.StaticText(self, -1, "Points:")
         text.SetFont(self.monofont)
-        ptext = wx.StaticText(self, -1, "---")
-        ptext.SetFont(self.monofont)
-        
+        vbox.Add(text)
+        points = wx.StaticText(self, -1, "---")
+        points.SetFont(self.monofont)
+        vbox.Add(points)
+
+        self.ptext = points
+
+    def Update(self):
+        self.ptext.SetLabel("%d" % self.points)
+
         
 class SubtractionTaskPanel(DualTaskPanel):
     def __init__(self, parent, id,
@@ -261,6 +313,20 @@ class SubtractionTaskPanel(DualTaskPanel):
     @property
     def size(self):
         return len(self.number1)
+
+    @DualTaskPanel.active.setter
+    def active(self, status):
+        if type(status) == bool:
+            self._active = status
+            if self.text1 is not None and self.text2 is not None and self.entry is not None:
+                for t in self.text1:
+                    t.Disable()
+                for t in self.text2:
+                    t.Disable()
+                for k in self.keys:
+                    k.Disable()
+                self.entry.Disable()
+                self.entry.SetValue(EMPTY_STRING)
         
     def SetNumbers(self, tpl):
         """Sets the internal numbers for subtraction"""
@@ -323,11 +389,13 @@ class SubtractionTaskPanel(DualTaskPanel):
         keyboard = wx.Panel(center, -1)
         ksizer = wx.GridSizer(2, 5, 5, 5)
         keyboard.SetSizer(ksizer)
+        keys = []
         
         for digit in string.digits:
             b = wx.Button(keyboard, -1, digit)
             b.SetFont(self.monofont)
             ksizer.Add(b, 20)
+            keys.append(b)
 
         cvbox.Add(keyboard)
 
@@ -345,10 +413,11 @@ class SubtractionTaskPanel(DualTaskPanel):
         self.entry = entry
         self.text1 = text1
         self.text2 = text2
-        self.keyboard = keyboard
+        self.keys = keys
         
         self.Bind(wx.EVT_BUTTON,  self.OnButton)
 
+    
 
     def SetUp(self):
         """Correctly sets up the panel according to the condition"""
@@ -365,6 +434,7 @@ class SubtractionTaskPanel(DualTaskPanel):
         """Updates the panel after pressing one of the buttons"""
         digit = event.GetEventObject().GetLabel()
         self.index += 1
+        self.BroadcastResponse(digit)
         self.SetUp()
 
         
@@ -381,15 +451,30 @@ class DualTaskFrame(wx.Frame):
         "Does the layout"
         mainpanel = wx.Panel(self)
         mainbox = wx.BoxSizer(wx.HORIZONTAL)
-        
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+
+        points = PointPanel(mainpanel, -1)
         typing = TypingTaskPanel(mainpanel, -1,
                                  word = "Dolicocephalus",
                                  condition = EASY)
-        mainbox.Add(typing, 1, wx.EXPAND | wx.LEFT, 10)
+        hbox.Add(typing, 1, wx.EXPAND | wx.LEFT, 10)
+        typing.active = False
+        typing.AddResponseListener(self)
         
         subtraction = SubtractionTaskPanel(mainpanel, -1)
-        mainbox.Add(subtraction, 1, wx.EXPAND | wx.RIGHT, 10)
+        hbox.Add(subtraction, 1, wx.EXPAND | wx.RIGHT, 10)
+        subtraction.active = False
+        subtraction.AddResponseListener(self)
 
+        #vbox.Add((20, 20), wx.EXPAND | wx.ALL)
+        vbox.Add(points)
+        vbox.Add(hbox)
+
+        mainbox.Add((20, 20), wx.EXPAND | wx.ALL)
+        mainbox.Add(vbox)
+        mainbox.Add((20, 20), wx.EXPAND | wx.ALL)
+        
         mainpanel.SetSizer(mainbox)
 
  
