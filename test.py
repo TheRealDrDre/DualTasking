@@ -8,6 +8,7 @@
 import wx
 import types
 import string
+import time
 
 EASY = 1001
 HARD = 1002
@@ -52,6 +53,8 @@ class DualTaskPanel(wx.Panel):
         super(DualTaskPanel, self).__init__(parent=parent, id=id)
         self.task_name = None
         self.index = 0
+        self.logger = None
+        self.onset = time.time()
         self.condition = condition
         self.monofont = wx.Font(16,
                                 wx.FONTFAMILY_TELETYPE,  # Monospace
@@ -97,7 +100,24 @@ class DualTaskPanel(wx.Panel):
         else:
             self._index = -1
 
-        
+    def ResponseCorrect(self, val):
+        """Returns whether a response is correct"""
+        return True
+
+    def LogResponse(self, response):
+        """Logs a response if the logger is enabled"""
+        time = time.time()
+        rt = time - self.onset 
+        #diff = self.
+        if self.logger is not None:
+            data = [self.name,
+                    CONDITIONS[self.condition],
+                    response,
+                    self.ResponseCorrect(response),
+                    time,
+                    rt]
+            self.logger.log(data)
+            
 class TypingTaskPanel(DualTaskPanel):
     """A panel for the Typing Task"""
     def __init__(self, parent, id, word = None, condition = EASY):
@@ -274,7 +294,8 @@ class SubtractionTaskPanel(DualTaskPanel):
         for j in range(self.size):
             text1.append(wx.StaticText(center,
                                        -1,
-                                       self.number1[j]))
+                                       self.number1[j],
+                                       ))
 
         for j in range(self.size):
             text2.append(wx.StaticText(center,
@@ -293,8 +314,9 @@ class SubtractionTaskPanel(DualTaskPanel):
 
         cvbox.Add(nsizer)
         
-        entry = wx.TextCtrl(center, -1)
+        entry = wx.TextCtrl(center, -1, style=wx.TE_RIGHT)
         entry.SetFont(self.monofont)
+        
         
         cvbox.Add(entry, proportion = 1, flag=wx.EXPAND)
 
