@@ -274,7 +274,7 @@ class TypingTaskPanel(DualTaskPanel):
 
         keyboard = wx.Panel(center, -1)
         keys = []
-        ksizer = wx.GridSizer(5, 6, 5, 5)
+        ksizer = wx.GridSizer(6, 5, 5, 5)
         keyboard.SetSizer(ksizer)
         
         for letter in string.ascii_uppercase:
@@ -351,7 +351,7 @@ class SubtractionTaskPanel(DualTaskPanel):
         self.SetNumbers(numbers)
         super(SubtractionTaskPanel, self).__init__(parent=parent, id=id,
                                                    condition=condition)
-        
+
     @property
     def size(self):
         return len(self.number1)
@@ -434,24 +434,43 @@ class SubtractionTaskPanel(DualTaskPanel):
                                        -1,
                                        self.number2[j]))
 
-        text1.append(wx.StaticText(center, -1, "-"))
-        text2.append(wx.StaticText(center, -1, "="))
+        #text1.append(wx.StaticText(center, -1, "-"))
+        #text2.append(wx.StaticText(center, -1, "="))
             
-        nsizer = wx.GridSizer(2, self.size + 1, 5, 5)
+        nsizer = wx.GridSizer(2, self.size, 0, 0)
         allt = text1 + text2
-        
+
+        ksizer = wx.GridSizer(2, 1, 0, 0)
+        minus = wx.StaticText(center, -1, "-")
+        minus.SetFont(self.monofont)
+        equal = wx.StaticText(center, -1, "=")
+        equal.SetFont(self.monofont)
+       
+        ksizer.Add(minus)
+        ksizer.Add(equal)
+                   
         for t in allt:
             t.SetFont(self.monofont)
             nsizer.Add(t, 5)
 
-        cvbox.Add(nsizer)
-        
+
         entry = wx.TextCtrl(center, -1, style=wx.TE_RIGHT)
         entry.SetFont(self.monofont)
-        
-        
-        cvbox.Add(entry, proportion = 1, flag=wx.EXPAND)
 
+        vbox1 = wx.BoxSizer(wx.VERTICAL)
+        vbox1.Add(nsizer, 1, wx.ALIGN_RIGHT)
+        vbox1.Add(entry, proportion = 0, flag=wx.EXPAND | wx.ALL)
+
+        
+        hbox1 = wx.BoxSizer(wx.HORIZONTAL)
+        hbox1.Add(vbox1, 0, wx.ALIGN_RIGHT, border=20)
+        hbox1.Add(ksizer, 0, wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT, border=20)
+        #cvbox.Add(nsizer, 0, wx.ALIGN_RIGHT)
+        cvbox.Add(hbox1, 0, wx.ALIGN_RIGHT)
+
+        #cvbox.Add(entry, proportion = 1, flag=wx.EXPAND)
+
+                
         keyboard = wx.Panel(center, -1)
         ksizer = wx.GridSizer(2, 5, 5, 5)
         keyboard.SetSizer(ksizer)
@@ -509,6 +528,7 @@ class SubtractionTaskPanel(DualTaskPanel):
         
         
 class DualTaskFrame(wx.Frame):
+    """The main experiment's window"""
     def __init__(self, parent, title):
         """The main panel"""
         super(DualTaskFrame, self).__init__(parent, title=title, size=(800,400))
