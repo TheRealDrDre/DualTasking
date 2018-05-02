@@ -270,7 +270,7 @@ class TypingTaskPanel(DualTaskPanel):
 
         entry = wx.TextCtrl(center, -1)
         entry.SetFont(self.monofont)
-        cbox.Add(entry, proportion=1, flag=wx.EXPAND)
+        cbox.Add(entry, proportion=1, flag=wx.EXPAND | wx.ALL, border = 20)
 
         keyboard = wx.Panel(center, -1)
         keys = []
@@ -283,7 +283,7 @@ class TypingTaskPanel(DualTaskPanel):
             ksizer.Add(b, 20)
             keys.append(b)
 
-        cbox.Add(keyboard)
+        cbox.Add(keyboard, 0, wx.EXPAND | wx.ALL, border = 20)
 
 
         vbox.Add((20, 20), wx.EXPAND)
@@ -360,27 +360,33 @@ class SubtractionTaskPanel(DualTaskPanel):
     def active(self, status):
         if type(status) == bool:
             self._active = status
-            if self.text1 is not None and self.text2 is not None and self.entry is not None:
+            if self.text1 is not None and \
+            self.text2 is not None and \
+            self.entry is not None:
                 if status == False:
                     for t in self.text1:
                         t.Disable()
-                        t.SetLabel(".")
+                        t.SetLabel("*")
                     for t in self.text2:
                         t.Disable()
-                        t.SetLabel(".")
+                        t.SetLabel("*")
                     for k in self.keys:
                         k.Disable()
+                    for t in self.text3:
+                        t.Disable()
                         
                     self.entry.Disable()
                     self.entry.SetValue(EMPTY_STRING)
 
                 if status == True:          
-                    for d, t in zip(self.number1, self.text1[:-1]):
+                    for d, t in zip(self.number1, self.text1):
                         t.Enable()
                         t.SetLabel(d)
-                    for d, t in zip(self.number2, self.text2[:-1]):
+                    for d, t in zip(self.number2, self.text2):
                         t.Enable()
                         t.SetLabel(d)
+                    for t in self.text3:
+                        t.Enable()
                     for k in self.keys:
                         k.Enable()
                         
@@ -441,13 +447,13 @@ class SubtractionTaskPanel(DualTaskPanel):
         allt = text1 + text2
 
         ksizer = wx.GridSizer(2, 1, 0, 0)
-        minus = wx.StaticText(center, -1, "-")
-        minus.SetFont(self.monofont)
-        equal = wx.StaticText(center, -1, "=")
-        equal.SetFont(self.monofont)
+        text3 = []
+        for char in ["-", "="]:
+            x = wx.StaticText(center, -1, char)
+            x.SetFont(self.monofont)
+            text3.append(x)
+            ksizer.Add(x)
        
-        ksizer.Add(minus)
-        ksizer.Add(equal)
                    
         for t in allt:
             t.SetFont(self.monofont)
@@ -458,18 +464,13 @@ class SubtractionTaskPanel(DualTaskPanel):
         entry.SetFont(self.monofont)
 
         vbox1 = wx.BoxSizer(wx.VERTICAL)
-        vbox1.Add(nsizer, 1, wx.ALIGN_RIGHT)
-        vbox1.Add(entry, proportion = 0, flag=wx.EXPAND | wx.ALL)
-
+        vbox1.Add(nsizer, 1, wx.ALIGN_RIGHT | wx.LEFT, border = 20)
+        vbox1.Add(entry, proportion = 0, flag=wx.EXPAND | wx.BOTTOM, border = 20)
         
         hbox1 = wx.BoxSizer(wx.HORIZONTAL)
-        hbox1.Add(vbox1, 0, wx.ALIGN_RIGHT, border=20)
+        hbox1.Add(vbox1, 0, wx.ALIGN_RIGHT | wx.EXPAND, border=20)
         hbox1.Add(ksizer, 0, wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT, border=20)
-        #cvbox.Add(nsizer, 0, wx.ALIGN_RIGHT)
         cvbox.Add(hbox1, 0, wx.ALIGN_RIGHT)
-
-        #cvbox.Add(entry, proportion = 1, flag=wx.EXPAND)
-
                 
         keyboard = wx.Panel(center, -1)
         ksizer = wx.GridSizer(2, 5, 5, 5)
@@ -482,22 +483,21 @@ class SubtractionTaskPanel(DualTaskPanel):
             ksizer.Add(b, 20)
             keys.append(b)
 
-        cvbox.Add(keyboard)
+        cvbox.Add(keyboard, 0, wx.EXPAND | wx.ALL, border = 20)
 
         vbox.Add((20, 20), wx.EXPAND)
-        #vbox.AddStretchSpacer(wx.EXPAND)
         vbox.Add(center, wx.ALIGN_CENTER)
-        #vbox.AddStretchSpacer()
         vbox.Add((20, 20), wx.EXPAND)
         
         hbox.Add((20, 20), wx.EXPAND | wx.ALL)
         hbox.Add(vbox)
         hbox.Add((20, 20), wx.EXPAND | wx.ALL)
         
-        # Save all the elements in internal fields
+        # Save all the important elements in internal fields
         self.entry = entry
         self.text1 = text1
         self.text2 = text2
+        self.text3 = text3
         self.keys = keys
         
         self.Bind(wx.EVT_BUTTON,  self.OnButton)
