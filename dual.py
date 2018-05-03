@@ -254,14 +254,18 @@ class DualTaskPanel(wx.Panel):
             self.logger.log(data)
 
 
+## ---------------------------------------------------------------- ##
+## The Point System
+## ---------------------------------------------------------------- ##
+
 EVT_RESULT_ID = wx.NewId()
  
 def EVT_RESULT(win, func):
-    """Define Result Event."""
+    """Define Result Event"""
     win.Connect(-1, -1, EVT_RESULT_ID, func)
  
 class PointEvent(wx.PyEvent):
-    """Simple event to carry arbitrary result data."""
+    """Simple event to safely carry point updates in a thread"""
     def __init__(self, data):
         """Init Result Event."""
         wx.PyEvent.__init__(self)
@@ -306,17 +310,16 @@ class PointPanel(DualTaskPanel):
         self.Update()
         
     def InitUI(self):
-
         vbox = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(vbox)
 
         vbox.Add((20, 20), wx.EXPAND | wx.ALL)
         text = wx.StaticText(self, -1, "Points:")
         text.SetFont(self.monofont)
-        vbox.Add(text)
+        vbox.Add(text, 0, wx.ALIGN_CENTER)
         points = wx.StaticText(self, -1, "---")
         points.SetFont(self.monofont)
-        vbox.Add(points)
+        vbox.Add(points, 0, wx.ALIGN_CENTER)
 
         self.ptext = points
 
@@ -325,7 +328,12 @@ class PointPanel(DualTaskPanel):
         self.ptext.SetLabel("%d" % self.points)
         print("Points %d" % self.points)
         self.lock.release()
-        
+
+
+## ---------------------------------------------------------------- ##
+## TYPING TASK PANEL
+## ---------------------------------------------------------------- ##
+
 class TypingTaskPanel(DualTaskPanel):
     """A panel for the Typing Task"""
     def __init__(self, parent, id, trial = TypingTrial(condition = "easy",
@@ -500,9 +508,13 @@ class TypingTaskPanel(DualTaskPanel):
         self.BroadcastResponse(resp)
         
 
+## ---------------------------------------------------------------- ##
+## SUBTRACTION PANEL
+## ---------------------------------------------------------------- ##
+        
 class SubtractionTaskPanel(DualTaskPanel):
     """ A panel that implements the subtraction task of 
-    Borst et al. (2007)
+    Borst et al. (2010)
     """
     def __init__(self, parent, id,
                  trial = SubtractionTrial("easy", 8888888888, 7654321000)):
@@ -513,6 +525,7 @@ class SubtractionTaskPanel(DualTaskPanel):
         
     @property
     def trial(self):
+        """The internal trial"""
         return self._trial
 
     @trial.setter
@@ -527,10 +540,12 @@ class SubtractionTaskPanel(DualTaskPanel):
         
     @property
     def size(self):
+        """Returns the trial's size (length of the numbers)"""
         return len(self.number1)
 
     @DualTaskPanel.index.setter
     def index(self, val):
+        """Updates the internal index"""
         if type(val) == int:
             self._index = val
             if self.index >= self.size:
@@ -766,12 +781,14 @@ class DualTaskFrame(wx.Frame):
         subtraction.active = True
         subtraction.AddResponseListener(self)
 
-        vbox.Add(points, 0, wx.EXPAND | wx.BOTTOM | wx.ALIGN_BOTTOM, 10)
-        vbox.Add(hbox, 1, wx.TOP | wx.ALIGN_TOP, 10)
-
-        mainbox.Add((20, 20), wx.EXPAND | wx.ALL)
+        vbox.Add((20, 20), 0, wx.EXPAND | wx.ALL)
+        vbox.Add(points, 0, wx.EXPAND | wx.BOTTOM | wx.ALIGN_CENTER, 10)
+        vbox.Add(hbox, 0, wx.TOP | wx.ALIGN_CENTER, 10)
+        vbox.Add((20, 20), 0, wx.EXPAND | wx.ALL)
+        
+        mainbox.Add((20, 20), 1, wx.EXPAND | wx.ALL)
         mainbox.Add(vbox)
-        mainbox.Add((20, 20), wx.EXPAND | wx.ALL)
+        mainbox.Add((20, 20), 1, wx.EXPAND | wx.ALL)
         
         mainpanel.SetSizer(mainbox)
 
