@@ -313,7 +313,7 @@ class PointPanel(DualTaskPanel):
         vbox = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(vbox)
 
-        vbox.Add((20, 20), wx.EXPAND | wx.ALL)
+        vbox.Add((20, 20), 0, wx.EXPAND | wx.ALL)
         text = wx.StaticText(self, -1, "Points:")
         text.SetFont(self.monofont)
         vbox.Add(text, 0, wx.ALIGN_CENTER)
@@ -782,13 +782,13 @@ class DualTaskFrame(wx.Frame):
         subtraction.active = True
         subtraction.AddResponseListener(self)
 
-        vbox.Add((20, 20), 0, wx.EXPAND | wx.ALL)
-        vbox.Add(points, 0, wx.EXPAND | wx.BOTTOM | wx.ALIGN_CENTER, 10)
+        vbox.Add((20, 20), 1, wx.EXPAND | wx.ALL)
+        vbox.Add(points, 0, wx.EXPAND | wx.BOTTOM, 10)
         vbox.Add(hbox, 0, wx.TOP | wx.ALIGN_CENTER, 10)
-        vbox.Add((20, 20), 0, wx.EXPAND | wx.ALL)
+        vbox.Add((20, 20), 1, wx.EXPAND | wx.ALL)
         
         mainbox.Add((20, 20), 1, wx.EXPAND | wx.ALL)
-        mainbox.Add(vbox)
+        mainbox.Add(vbox, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER)
         mainbox.Add((20, 20), 1, wx.EXPAND | wx.ALL)
         
         mainpanel.SetSizer(mainbox)
