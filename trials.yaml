@@ -1,12 +1,12 @@
 - typing:
-      condition : easy
+      condition : hard
       word : apparently
   subtraction:
       condition : easy
       number1 : 5555555555
       number2 : 4444444444
 - typing:
-      condition : hard
+      condition : easy
       word : papaertnly
   subtraction:
       condition : hard

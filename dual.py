@@ -12,6 +12,7 @@ import types
 import string
 import time
 import yaml
+import sys
 
 
 EASY = 1001
@@ -157,7 +158,7 @@ class DualTaskPanel(wx.Panel):
         super(DualTaskPanel, self).__init__(parent=parent, id=id)
         self.task_name = None
         self.index = 0
-        self.logger = None
+        #self.logger = None
         self.onset = time.time()
         self.condition = condition
         self.finished = False
@@ -166,8 +167,8 @@ class DualTaskPanel(wx.Panel):
                                 wx.FONTFAMILY_TELETYPE,  # Monospace
                                 wx.FONTSTYLE_NORMAL,     # Not slanted
                                 wx.FONTWEIGHT_BOLD)
-        self.InitUI()
-        self.logger = Logger(None)
+        #self.InitUI()
+        #self.logger = Logger(None)
 
     @property
     def finished(self):
@@ -182,7 +183,6 @@ class DualTaskPanel(wx.Panel):
     def active(self):
         """Returns whether a panel is currently active:"""
         return self._active
-
 
     @active.setter
     def active(self, status):
@@ -288,16 +288,51 @@ class PointPanel(DualTaskPanel):
         
 class TypingTaskPanel(DualTaskPanel):
     """A panel for the Typing Task"""
-    def __init__(self, parent, id, word = None, condition = EASY):
-        #self.index = 0
-        self.word = word
-        self.condition = condition
+    def __init__(self, parent, id, trial = TypingTrial(condition = "easy",
+                                                       word = "A" * 10)):
+        self.trial = trial
+        super(TypingTaskPanel, self).__init__(parent=parent, id=id,
+                                              condition = trial.condition)
+        print("Z")
         self.entry = None
         self.keys = None
-        super(TypingTaskPanel, self).__init__(parent=parent, id=id)
+        self.InitUI()
         self.SetUp()
 
+    @property
+    def size(self):
+        if self.word is not None:
+            return len(self.word)
+        else:
+            return 10
+        
+    @property
+    def trial(self):
+        return self._trial
 
+    @trial.setter
+    def trial(self, tr):
+        if isinstance(tr, TypingTrial):
+            self.finished = False
+            self.word = tr.word
+            self.index = 0
+            self.condition = CONDITIONS[tr.condition]
+
+        else:
+            raise Exception("Wrong object for trial: '%s'" % tr)
+
+    @DualTaskPanel.index.setter
+    def index(self, val):
+        if type(val) == int:
+            self._index = val
+            if self.index >= self.size:
+                print("panel %s is finished" % self)
+                
+                self.finished = True
+        else:
+            raise Exception("Invalid index %d" % val)
+
+        
     @property
     def word(self):
         """Returns the internal word that is displayed."""
@@ -406,8 +441,11 @@ class TypingTaskPanel(DualTaskPanel):
                     self.entry.SetValue(EMPTY_STRING)
             else:
                 # Throw an exception
-                raise Exception("Wrong index for panel '%s': %d" % (self,
-                                                                    self.index)) 
+                raise Exception("Wrong condition for panel '%s': %s" % (self,
+                                                                        self.condition))
+        else:
+            raise Exception("Wrong index for panel '%s': %d'"  % (self,
+                                                                  self.index))
 
     def OnButton(self, event):
         """Updates the panel after pressing one of the buttons"""
@@ -418,9 +456,9 @@ class TypingTaskPanel(DualTaskPanel):
                              time=tme,
                              correct = self.correct_response,
                              index = self.index)
-        self.BroadcastResponse(resp)
         self.index += 1
-
+        self.BroadcastResponse(resp)
+        
 
 class SubtractionTaskPanel(DualTaskPanel):
     """ A panel that implements the subtraction task of 
@@ -431,6 +469,8 @@ class SubtractionTaskPanel(DualTaskPanel):
         self.trial = trial
         super(SubtractionTaskPanel, self).__init__(parent=parent, id=id,
                                                    condition=trial.condition)
+        self.InitUI()
+        
     @property
     def trial(self):
         return self._trial
@@ -439,14 +479,26 @@ class SubtractionTaskPanel(DualTaskPanel):
     def trial(self, val):
         """Sets a new trial"""
         if isinstance(val, SubtractionTrial):
+            self.finished = False
             self.SetNumbers((val.number1, val.number2))
-            self.condition = CONDITIONS[val.condition]
             self.index = 0
+            self.condition = CONDITIONS[val.condition]
+
         
     @property
     def size(self):
         return len(self.number1)
 
+    @DualTaskPanel.index.setter
+    def index(self, val):
+        if type(val) == int:
+            self._index = val
+            if self.index >= self.size:
+                print("panel %s is finished" % self)
+                self.finished = True
+        else:
+            raise Exception("Invalid index %d" % val)
+    
     @DualTaskPanel.active.setter
     def active(self, status):
         if type(status) == bool:
@@ -531,9 +583,6 @@ class SubtractionTaskPanel(DualTaskPanel):
                                        -1,
                                        self.number2[j]))
 
-        #text1.append(wx.StaticText(center, -1, "-"))
-        #text2.append(wx.StaticText(center, -1, "="))
-            
         nsizer = wx.GridSizer(2, self.size, 0, 0)
         allt = text1 + text2
 
@@ -614,15 +663,15 @@ class SubtractionTaskPanel(DualTaskPanel):
                              time=tme,
                              correct = self.correct_response,
                              index = self.index)
-        self.BroadcastResponse(resp)
         self.index += 1
+        self.BroadcastResponse(resp)
         
         
 class DualTaskFrame(wx.Frame):
     """The main experiment's window"""
     def __init__(self, parent, title):
         """The main panel"""
-        super(DualTaskFrame, self).__init__(parent, title=title, size=(800,400))
+        super(DualTaskFrame, self).__init__(parent, title=title, size=(1200,800))
         self.trials = iter(self.LoadTrials())
         self.current_trial = next(self.trials, None)
         if self.current_trial is not None:
@@ -659,13 +708,13 @@ class DualTaskFrame(wx.Frame):
 
         points = PointPanel(mainpanel, -1)
         typing = TypingTaskPanel(mainpanel, -1,
-                                 word = "Dolicocephalus",
-                                 condition = EASY)
+                                 trial = self.current_trial[0])
         hbox.Add(typing, 1, wx.EXPAND | wx.LEFT, 10)
         typing.active = False
         typing.AddResponseListener(self)
         
-        subtraction = SubtractionTaskPanel(mainpanel, -1)
+        subtraction = SubtractionTaskPanel(mainpanel, -1,
+                                           trial = self.current_trial[1])
         hbox.Add(subtraction, 1, wx.EXPAND | wx.RIGHT, 10)
         subtraction.active = True
         subtraction.AddResponseListener(self)
@@ -687,6 +736,26 @@ class DualTaskFrame(wx.Frame):
     def ProcessResponse(self, event):
         source = event.source
         source.active = False
+
+        # This is the part where we log the response
+        print("Subtraction: %s, Typing: %s" %
+              (self.subtraction.finished, self.typing.finished))
+
+        # If both panels are done, move to the next step
+        if self.subtraction.finished and self.typing.finished:
+            print("Both panels are finished")
+            self.current_trial = next(self.trials, None)
+
+            if self.current_trial is not None:
+                # If we have a new trial, update the panels
+                self.typing.trial = self.current_trial[0]
+                self.subtraction.trial = self.current_trial[1]
+                
+            else:
+                # Quit --- we are done
+                sys.exit()
+
+        # Just restart continue alternating
         if source == self.typing:
             self.subtraction.active = True
         elif source == self.subtraction:
