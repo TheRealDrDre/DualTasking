@@ -16,8 +16,8 @@ import sys
 import threading
 
 
-EASY = 1001
-HARD = 1002
+EASY = wx.NewId()
+HARD = wx.NewId()
 EMPTY_STRING = ""
 
 CONDITIONS = {EASY : "easy", HARD : "hard",
@@ -149,9 +149,13 @@ class ResponseEvent():
         self.source = source        # The UI panel that generated it
         self.time = time            # The time at which it was generated
         self.response = response    # The subject's response
-        self.correct = None         # What would have been the correct response
+        self.correct = correct      # What would have been the correct response
         self.index = index          # The index of the response
 
+    
+    def IsCorrect(self):
+        """Checks whether the given response is also the correct response"""
+        return self.response == self.correct
         
 class DualTaskPanel(wx.Panel):
     """A Dual Task object"""
@@ -159,7 +163,6 @@ class DualTaskPanel(wx.Panel):
         super(DualTaskPanel, self).__init__(parent=parent, id=id)
         self.task_name = None
         self.index = 0
-        #self.logger = None
         self.onset = time.time()
         self.condition = condition
         self.finished = False
@@ -168,8 +171,7 @@ class DualTaskPanel(wx.Panel):
                                 wx.FONTFAMILY_TELETYPE,  # Monospace
                                 wx.FONTSTYLE_NORMAL,     # Not slanted
                                 wx.FONTWEIGHT_BOLD)
-        #self.InitUI()
-        #self.logger = Logger(None)
+
 
     @property
     def finished(self):
@@ -281,14 +283,13 @@ class PointPanel(DualTaskPanel):
         EVT_RESULT(self, self.UpdatePoints)
     
     def Run(self):
-        #print("Called RUN")
         while self.active:
-            print("Waiting... %d" % self.points)
-            time.sleep(2.0)
-            #self.lock.acquire()
-            if self is not None and self.active:
-                wx.PostEvent(self, PointEvent(-2))
-            #self.lock.release()
+            try:
+                time.sleep(1.0)
+                if self is not None and self.active:
+                    wx.PostEvent(self, PointEvent(-2))
+            except RuntimeError:
+                sys.exit(0)
         
     @property
     def points(self):
@@ -786,7 +787,8 @@ class DualTaskFrame(wx.Frame):
         source.active = False
 
         # Update the points in thread-friendly manner
-        wx.PostEvent(self.points, PointEvent(+10))
+        if event.IsCorrect():
+            wx.PostEvent(self.points, PointEvent(+10))
         
         # This is the part where we log the response
 
