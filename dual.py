@@ -263,7 +263,6 @@ class DualTaskPanel(wx.Panel):
         """Logs a response if the logger is enabled"""
         tme = time.time()
         rt = tme - self.onset 
-        #diff = self.
         if self.logger is not None:
             data = [self.name,
                     CONDITIONS[self.condition],
@@ -429,7 +428,8 @@ class TypingTaskPanel(DualTaskPanel):
                     self.entry.SetValue(EMPTY_STRING)
             else:
                 # Throw an exception
-                pass
+                raise Exception("Wrong index for panel '%s': %d" % (self,
+                                                                    self.index)) 
 
     def OnButton(self, event):
         """Updates the panel after pressing one of the buttons"""
