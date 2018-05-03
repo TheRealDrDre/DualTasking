@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 
 ## ---------------------------------------------------------------- ##
+## A Python versio of the Dual Task paradigm by Jelmer Borst.
+## ---------------------------------------------------------------- ##
 ## Goal is to keep all the code into a single file that can be run
 ## as a script
-## 
+## ---------------------------------------------------------------- ##
 
 import wx
 import types
 import string
 import time
 import yaml
+
 
 EASY = 1001
 HARD = 1002
@@ -25,20 +28,86 @@ class Trial:
 
 class TypingTrial(Trial):
     """A typing task trial"""
-    #def __init__(self, condition="easy", word=EMPTY_STRING):
-    def __init__(self, **entries):
-        self.__dict__.update(entries)
-        #super(Trial, self).__init__(self, condition)
-        #self.word = word
+    def __init__(self, condition = "easy", word = EMPTY_STRING * 10):
+        super(TypingTrial, self).__init__(condition)
+        self.word = word
+
+    @property
+    def word(self):
+        return self._word
+
+    @word.setter
+    def word(self, val):
+        if type(val) is not str:
+            val = "%s" % val
+        
+        w = val.strip()
+        if len(w) == 10:
+            self._word = val.strip()
+        else:
+            raise Exception("Wrong length for word '%s': %d" % (w, len(w)))
+
+    def __repr__(self):
+        return "<word: '%s' (%s, %d)>" % (self.word.upper(),
+                                          self.condition,
+                                          len(self.word))
+
+    def __str__(self):
+        return self.__repr__()
 
 
 class SubtractionTrial(Trial):
     """A subtractiokn task trial"""
     def __init__(self, condition, number1, number2):
-        super(Trial, self).__init__(self, condition)
+        super(SubtractionTrial, self).__init__(condition)
         self.number1 = number1
         self.number2 = number2
 
+    @staticmethod
+    def chknum(val):
+        n = EMPTY_STRING
+        if type(val) is int:
+            n = "%.10d" % val
+
+        elif type(val) is str:
+            n = val.strip()
+
+        else:
+            raise Exception("Unknown value for number: '%val'" % val)
+
+        if len(n) != 10:
+            raise Exception("Wrong length for number: '%val'" % val)
+
+        return n
+
+    
+    @property
+    def number1(self):
+        return self._number1
+
+    @number1.setter
+    def number1(self, val):
+        self._number1 = self.chknum(val)
+
+    @property
+    def number2(self):
+        return self._number2
+            
+    @number2.setter
+    def number2(self, val):
+        self._number2 = self.chknum(val)
+
+
+    def __repr__(self):
+        return "<subtraction: %s - %s (%s, %d)>" % (self.number1,
+                                                    self.number2,
+                                                    self.condition,
+                                                    len(self.number1))
+
+    def __str__(self):
+        return self.__repr__()
+
+        
 class TrialManager:
     """An object that loads and manages a list of trials"""
     def __init__(self, fname="trials.yaml"):
@@ -50,9 +119,14 @@ class TrialManager:
             try:
                 lst = yaml.load(stream)
                 for j in lst:
-                    tdic = j['typing']
-                    z = TypingTrial(**tdic)
-                    print(z)
+                    t_dic = j['typing']
+                    s_dic = j['subtraction']
+                    t = TypingTrial(t_dic['condition'], t_dic['word'])
+                    s = SubtractionTrial(s_dic['condition'],
+                                         s_dic['number1'],
+                                         s_dic['number2'])
+                    print(t)
+                    print(s)
             except yaml.YAMLError as exc:
                 print(exc)
         
