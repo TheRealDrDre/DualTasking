@@ -118,6 +118,7 @@ class TrialManager:
         with open(fname, 'r') as stream:
             try:
                 lst = yaml.load(stream)
+                res = []
                 for j in lst:
                     t_dic = j['typing']
                     s_dic = j['subtraction']
@@ -125,10 +126,9 @@ class TrialManager:
                     s = SubtractionTrial(s_dic['condition'],
                                          s_dic['number1'],
                                          s_dic['number2'])
-                    print(t)
-                    print(s)
+                    res.append((t, s))
             except yaml.YAMLError as exc:
-                print(exc)
+                raise Exception("Incorrect YAML format for trials: %s" % (exc,))
         
         
 class Logger():
@@ -444,16 +444,15 @@ class TypingTaskPanel(DualTaskPanel):
         self.index += 1
 
 
-
-    
 class SubtractionTaskPanel(DualTaskPanel):
+    """ A panel that implements the subtraction task of 
+    Borst et al. (2007)
+    """
     def __init__(self, parent, id,
-                 numbers = ("1234567890", "0123456780"),
-                 condition = EASY):
-        self.SetNumbers(numbers)
+                 trial = SubtractionTrial("easy", 8888888888, 7654321000)):
+        self.trial = trial
         super(SubtractionTaskPanel, self).__init__(parent=parent, id=id,
-                                                   condition=condition)
-
+                                                   condition=trial.condition)
     @property
     def trial(self):
         return self._trial
@@ -461,8 +460,10 @@ class SubtractionTaskPanel(DualTaskPanel):
     @trial.setter
     def trial(self, val):
         """Sets a new trial"""
-        self.SetNumbers(val.number1, val.number2)
-
+        if isinstance(val, SubtractionTrial):
+            self.SetNumbers((val.number1, val.number2))
+            self.condition = CONDITIONS[val.condition]
+            self.index = 0
         
     @property
     def size(self):
@@ -644,10 +645,31 @@ class DualTaskFrame(wx.Frame):
     def __init__(self, parent, title):
         """The main panel"""
         super(DualTaskFrame, self).__init__(parent, title=title, size=(800,400))
-        self.trials = TrialManager()
-        self.InitUI()
-        self.Centre()
-        self.Show()
+        self.trials = iter(self.LoadTrials())
+        self.current_trial = next(self.trials, None)
+        if self.current_trial is not None:
+            self.InitUI()
+            self.Centre()
+            self.Show()
+
+    def LoadTrials(self, fname="trials.yaml"):
+        """Loads a series of trials from a YAML file"""
+        with open(fname, 'r') as stream:
+            try:
+                lst = yaml.load(stream)
+                res = []
+                for j in lst:
+                    t_dic = j['typing']
+                    s_dic = j['subtraction']
+                    t = TypingTrial(t_dic['condition'], t_dic['word'])
+                    s = SubtractionTrial(s_dic['condition'],
+                                         s_dic['number1'],
+                                         s_dic['number2'])
+                    res.append((t, s))
+
+                return tuple(res)
+            except yaml.YAMLError as exc:
+                raise Exception("Incorrect YAML format for trials: %s" % (exc,))
 
         
     def InitUI(self):
@@ -670,7 +692,6 @@ class DualTaskFrame(wx.Frame):
         subtraction.active = True
         subtraction.AddResponseListener(self)
 
-        #vbox.Add((20, 20), wx.EXPAND | wx.ALL)
         vbox.Add(points)
         vbox.Add(hbox)
 
