@@ -12,4 +12,17 @@
       condition : hard
       number1 : 5555555555
       number2 : 4646464646
-
+- typing:
+      condition : hard
+      word : girlfriend
+  subtraction:
+      condition : hard
+      number1 : 7235708551
+      number2 : 6077746824
+- typing:
+      condition : easy
+      word : lrgirifedn
+  subtraction:
+      condition : easy
+      number1 : 7451049462
+      number2 : 5230028241

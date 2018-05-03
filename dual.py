@@ -13,6 +13,7 @@ import string
 import time
 import yaml
 import sys
+import threading
 
 
 EASY = 1001
@@ -255,9 +256,23 @@ class PointPanel(DualTaskPanel):
     def __init__(self, parent, id):
         self.pointthread = None
         super(PointPanel, self).__init__(parent = parent,
-                                            id = id)
+                                         id = id)
+        self.InitUI()
+        self.thread = threading.Thread(group=None, target=self.Run)
+        self.lock = threading.Lock()
         self.points = 200
+        self.active = True
 
+    
+    def Run(self):
+        print("Called RUN")
+        while self.active:
+            print("Waiting... %d" % self.points)
+            time.sleep(2.0)
+            #self.lock.acquire()
+            self.points -= 2 
+            #self.lock.release()
+        
     @property
     def points(self):
         return self._points
@@ -265,7 +280,7 @@ class PointPanel(DualTaskPanel):
     @points.setter
     def points(self, pnts):
         self._points = pnts
-        self.Update()
+        self.SetUp()
         
     def InitUI(self):
 
@@ -283,8 +298,10 @@ class PointPanel(DualTaskPanel):
         self.ptext = points
 
     def SetUp(self):
+        self.lock.acquire()
         self.ptext.SetLabel("%d" % self.points)
-
+        print("Points %d" % self.points)
+        self.lock.release()
         
 class TypingTaskPanel(DualTaskPanel):
     """A panel for the Typing Task"""
@@ -517,7 +534,7 @@ class SubtractionTaskPanel(DualTaskPanel):
                         k.Disable()
                     for t in self.text3:
                         t.Disable()
-                        
+                    
                     self.entry.Disable()
                     self.entry.SetValue(EMPTY_STRING)
 
@@ -666,7 +683,13 @@ class SubtractionTaskPanel(DualTaskPanel):
         self.index += 1
         self.BroadcastResponse(resp)
         
-        
+
+## ---------------------------------------------------------------- ##
+## Dual Task frame
+## ---------------------------------------------------------------- ##
+## This is the main window for the experiment.
+## ---------------------------------------------------------------- ##
+
 class DualTaskFrame(wx.Frame):
     """The main experiment's window"""
     def __init__(self, parent, title):
@@ -709,18 +732,19 @@ class DualTaskFrame(wx.Frame):
         points = PointPanel(mainpanel, -1)
         typing = TypingTaskPanel(mainpanel, -1,
                                  trial = self.current_trial[0])
-        hbox.Add(typing, 1, wx.EXPAND | wx.LEFT, 10)
+        
+        hbox.Add(typing, 1, wx.EXPAND | wx.RIGHT, 10)
         typing.active = False
         typing.AddResponseListener(self)
         
         subtraction = SubtractionTaskPanel(mainpanel, -1,
                                            trial = self.current_trial[1])
-        hbox.Add(subtraction, 1, wx.EXPAND | wx.RIGHT, 10)
+        hbox.Add(subtraction, 1, wx.EXPAND | wx.LEFT, 10)
         subtraction.active = True
         subtraction.AddResponseListener(self)
 
-        vbox.Add(points)
-        vbox.Add(hbox)
+        vbox.Add(points, 0, wx.EXPAND | wx.BOTTOM | wx.ALIGN_BOTTOM, 10)
+        vbox.Add(hbox, 1, wx.TOP | wx.ALIGN_TOP, 10)
 
         mainbox.Add((20, 20), wx.EXPAND | wx.ALL)
         mainbox.Add(vbox)
@@ -731,6 +755,7 @@ class DualTaskFrame(wx.Frame):
         self.typing = typing
         self.subtraction = subtraction
         self.points = points
+        self.points.thread.start()
 
 
     def ProcessResponse(self, event):
@@ -753,6 +778,7 @@ class DualTaskFrame(wx.Frame):
                 
             else:
                 # Quit --- we are done
+                self.points.active = False
                 sys.exit()
 
         # Just restart continue alternating
