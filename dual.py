@@ -25,14 +25,16 @@ class Trial:
 
 class TypingTrial(Trial):
     """A typing task trial"""
-    def __init__(self, condition, number1, number2):
-        super(Trial, self).__init__(self, condition)
-        self.word = word
+    #def __init__(self, condition="easy", word=EMPTY_STRING):
+    def __init__(self, **entries):
+        self.__dict__.update(entries)
+        #super(Trial, self).__init__(self, condition)
+        #self.word = word
 
 
 class SubtractionTrial(Trial):
     """A subtractiokn task trial"""
-    def __init__(self, condition, word):
+    def __init__(self, condition, number1, number2):
         super(Trial, self).__init__(self, condition)
         self.number1 = number1
         self.number2 = number2
@@ -46,7 +48,11 @@ class TrialManager:
         """Loads a series of trials from a YAML file"""
         with open(fname, 'r') as stream:
             try:
-                print(yaml.load(stream))
+                lst = yaml.load(stream)
+                for j in lst:
+                    tdic = j['typing']
+                    z = TypingTrial(**tdic)
+                    print(z)
             except yaml.YAMLError as exc:
                 print(exc)
         

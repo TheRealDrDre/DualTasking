@@ -1,18 +1,15 @@
-trials:
-    - trial1:
-        - typing:
-            condition : easy
-            word : apparently
-        - subtraction:
-            condition : easy
-            number1 : 5555555555
-            number2 : 4444444444
-    - trial2:
-        - typing:
-            condition : hard
-            word : papaertnly
-        - subtraction:
-            condition : hard
-            number1 : '5555555555'
-            number2 : 4646464646
-        
+- typing:
+      condition : easy
+      word : apparently
+  subtraction:
+      condition : easy
+      number1 : 5555555555
+      number2 : 4444444444
+- typing:
+      condition : hard
+      word : papaertnly
+  subtraction:
+      condition : hard
+      number1 : '5555555555'
+      number2 : 4646464646
+
