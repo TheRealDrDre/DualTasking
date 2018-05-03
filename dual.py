@@ -108,28 +108,6 @@ class SubtractionTrial(Trial):
         return self.__repr__()
 
         
-class TrialManager:
-    """An object that loads and manages a list of trials"""
-    def __init__(self, fname="trials.yaml"):
-        self.Load(fname)
-
-    def Load(self, fname):
-        """Loads a series of trials from a YAML file"""
-        with open(fname, 'r') as stream:
-            try:
-                lst = yaml.load(stream)
-                res = []
-                for j in lst:
-                    t_dic = j['typing']
-                    s_dic = j['subtraction']
-                    t = TypingTrial(t_dic['condition'], t_dic['word'])
-                    s = SubtractionTrial(s_dic['condition'],
-                                         s_dic['number1'],
-                                         s_dic['number2'])
-                    res.append((t, s))
-            except yaml.YAMLError as exc:
-                raise Exception("Incorrect YAML format for trials: %s" % (exc,))
-        
         
 class Logger():
     """Logs responses onto a file"""
