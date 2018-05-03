@@ -29,13 +29,6 @@ class TypingTrial(Trial):
         super(Trial, self).__init__(self, condition)
         self.word = word
 
-    def ScrambleWord(self, word):
-        """
-        Scrambles a word to ensure that 
-        consecutive letters are not identical
-        """
-        pass
-    
 
 class SubtractionTrial(Trial):
     """A subtractiokn task trial"""
@@ -44,6 +37,20 @@ class SubtractionTrial(Trial):
         self.number1 = number1
         self.number2 = number2
 
+class TrialManager:
+    """An object that loads and manages a list of trials"""
+    def __init__(self, fname="trials.yaml"):
+        self.Load(fname)
+
+    def Load(self, fname):
+        """Loads a series of trials from a YAML file"""
+        with open(fname, 'r') as stream:
+            try:
+                print(yaml.load(stream))
+            except yaml.YAMLError as exc:
+                print(exc)
+        
+        
 class Logger():
     """Logs responses onto a file"""
     def __init__(self, pname=None):
@@ -95,6 +102,7 @@ class DualTaskPanel(wx.Panel):
         self.logger = None
         self.onset = time.time()
         self.condition = condition
+        self.finished = False
         self.responseListeners = []
         self.monofont = wx.Font(16,
                                 wx.FONTFAMILY_TELETYPE,  # Monospace
@@ -104,22 +112,34 @@ class DualTaskPanel(wx.Panel):
         self.logger = Logger(None)
 
     @property
+    def finished(self):
+        return self._finished
+
+    @finished.setter
+    def finished(self, b):
+        if type(b) == bool:
+            self._finished = b
+        
+    @property
     def active(self):
+        """Returns whether a panel is currently active:"""
         return self._active
 
 
     @active.setter
     def active(self, status):
-       if status == True or status == False:
-           self._active = status
+        """Activates or deactivates a panel"""
+        if status == True or status == False:
+            self._active = status
         
     def AddResponseListener(self, listener):
+        """Adds an object to invoke when a response is made"""
         if not listener in self.responseListeners: 
             self.responseListeners.append(listener)
                 
 
     def BroadcastResponse(self, response):
-        """Registers a response"""
+        """Invokes the ProcessResponse method of every listener"""
         for l in self.responseListeners:
             l.ProcessResponse(response)
         
@@ -173,6 +193,7 @@ class DualTaskPanel(wx.Panel):
                     rt]
             self.logger.log(data)
 
+            
 class PointPanel(DualTaskPanel):
     def __init__(self, parent, id):
         self.pointthread = None
@@ -243,6 +264,7 @@ class TypingTaskPanel(DualTaskPanel):
             res = "%s" % val
             self._word = res.upper()
 
+    
     @property
     def correct_response(self):
         """Returns the correct response for a subtraction task"""
@@ -343,7 +365,7 @@ class TypingTaskPanel(DualTaskPanel):
 
 
 
-        
+    
 class SubtractionTaskPanel(DualTaskPanel):
     def __init__(self, parent, id,
                  numbers = ("1234567890", "0123456780"),
@@ -352,6 +374,16 @@ class SubtractionTaskPanel(DualTaskPanel):
         super(SubtractionTaskPanel, self).__init__(parent=parent, id=id,
                                                    condition=condition)
 
+    @property
+    def trial(self):
+        return self._trial
+
+    @trial.setter
+    def trial(self, val):
+        """Sets a new trial"""
+        self.SetNumbers(val.number1, val.number2)
+
+        
     @property
     def size(self):
         return len(self.number1)
@@ -532,6 +564,7 @@ class DualTaskFrame(wx.Frame):
     def __init__(self, parent, title):
         """The main panel"""
         super(DualTaskFrame, self).__init__(parent, title=title, size=(800,400))
+        self.trials = TrialManager()
         self.InitUI()
         self.Centre()
         self.Show()
