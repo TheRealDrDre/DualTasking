@@ -251,6 +251,20 @@ class DualTaskPanel(wx.Panel):
                     rt]
             self.logger.log(data)
 
+
+EVT_RESULT_ID = wx.NewId()
+ 
+def EVT_RESULT(win, func):
+    """Define Result Event."""
+    win.Connect(-1, -1, EVT_RESULT_ID, func)
+ 
+class PointEvent(wx.PyEvent):
+    """Simple event to carry arbitrary result data."""
+    def __init__(self, data):
+        """Init Result Event."""
+        wx.PyEvent.__init__(self)
+        self.SetEventType(EVT_RESULT_ID)
+        self.data = data
             
 class PointPanel(DualTaskPanel):
     def __init__(self, parent, id):
@@ -263,24 +277,32 @@ class PointPanel(DualTaskPanel):
         self.points = 200
         self.active = True
 
+        # Set up event handler for any worker thread results
+        EVT_RESULT(self, self.UpdatePoints)
     
     def Run(self):
-        print("Called RUN")
+        #print("Called RUN")
         while self.active:
             print("Waiting... %d" % self.points)
             time.sleep(2.0)
             #self.lock.acquire()
-            self.points -= 2 
+            if self is not None and self.active:
+                wx.PostEvent(self, PointEvent(-2))
             #self.lock.release()
         
     @property
     def points(self):
         return self._points
-
+    
     @points.setter
     def points(self, pnts):
         self._points = pnts
         self.SetUp()
+
+    def UpdatePoints(self, evt):
+        inc = evt.data
+        self.points += inc
+        self.Update()
         
     def InitUI(self):
 
@@ -759,12 +781,14 @@ class DualTaskFrame(wx.Frame):
 
 
     def ProcessResponse(self, event):
+        """Processes a subject's response"""
         source = event.source
         source.active = False
 
+        # Update the points in thread-friendly manner
+        wx.PostEvent(self.points, PointEvent(+10))
+        
         # This is the part where we log the response
-        print("Subtraction: %s, Typing: %s" %
-              (self.subtraction.finished, self.typing.finished))
 
         # If both panels are done, move to the next step
         if self.subtraction.finished and self.typing.finished:
