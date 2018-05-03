@@ -416,7 +416,7 @@ class TypingTaskPanel(DualTaskPanel):
             
     def InitUI(self):
         """Does the layout of the panel."""
-        self.SetBackgroundColour("#FF5555")
+        #self.SetBackgroundColour("#FF5555")
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(hbox)
         
@@ -426,7 +426,7 @@ class TypingTaskPanel(DualTaskPanel):
         hbox.Add((20, 20), wx.EXPAND)
 
         
-        center = wx.Panel(self, -1)
+        center = wx.Panel(self, -1, style=wx.SIMPLE_BORDER)
         cbox = wx.BoxSizer(wx.VERTICAL)
         center.SetSizer(cbox)
 
@@ -522,7 +522,8 @@ class SubtractionTaskPanel(DualTaskPanel):
         super(SubtractionTaskPanel, self).__init__(parent=parent, id=id,
                                                    condition=trial.condition)
         self.InitUI()
-        
+
+
     @property
     def trial(self):
         """The internal trial"""
@@ -615,12 +616,12 @@ class SubtractionTaskPanel(DualTaskPanel):
         
     def InitUI(self):
         """Set up the panel UI"""
-        self.SetBackgroundColour("#5555FF")
+        #self.SetBackgroundColour("#5555FF")
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         vbox = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(hbox)
         
-        center = wx.Panel(self, -1)
+        center = wx.Panel(self, -1, style=wx.SIMPLE_BORDER)
         cvbox = wx.BoxSizer(wx.VERTICAL)
         center.SetSizer(cvbox)
 
