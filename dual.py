@@ -577,13 +577,22 @@ class SubtractionTaskPanel(DualTaskPanel):
                     self.entry.Disable()
                     self.entry.SetValue(EMPTY_STRING)
 
-                if status == True:          
-                    for d, t in zip(self.number1, self.text1):
+                if status == True:
+                    j = self.size - self.index # Digist up to index
+                    for i, t in enumerate(self.text1):
                         t.Enable()
-                        t.SetLabel(d)
-                    for d, t in zip(self.number2, self.text2):
+                        if i < j:
+                            t.SetLabel(self.number1[i])
+                        else:
+                            t.SetLabel("#")  # Mask the previous numbers
+
+                    for i, t in enumerate(self.text2):
                         t.Enable()
-                        t.SetLabel(d)
+                        if i < j:
+                            t.SetLabel(self.number2[i])
+                        else:
+                            t.SetLabel("#")
+                   
                     for t in self.text3:
                         t.Enable()
                     for k in self.keys:
